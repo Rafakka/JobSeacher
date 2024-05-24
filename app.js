@@ -1,32 +1,71 @@
 const express = require("express");
+const exphbs = require("express-handlebars");
 const app = express();
+const path = require("path");
 const db = require('./db/connection');
 const bodyParser = require ('body-parser');
+const Job = require('./models/Job');
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 const PORT = 3000;
 
-//body parser
+// Handlebars setup
+app.engine('handlebars', exphbs.engine({ defaultLayout: 'main' }));
+app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, 'views'));
 
-app.use(bodyParser.urlencoded({extended:false}));
+// Static folder
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.listen (PORT, function(){
-    console.log(`O express esta rodando na porta ${PORT}`);
+// Body parser
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// Start the server
+app.listen(PORT, function(){
+    console.log(`Express is running on port ${PORT}`);
 });
 
-// db connections
-db
-    .authenticate()
-    .then(() => {
-        console.log ("Conectou o banco com sucesso");
-    })
-    .catch(err => {
-        console.log("Ocorreu um erro ao conectar", err);
-    });
+// Database connection
+db.authenticate()
+  .then(() => {
+      console.log("Database connection successful");
+  })
+  .catch(err => {
+      console.error("Unable to connect to the database:", err);
+  });
 
-// routes
-app.get ('/', (req,res) => {
-    res.send("Esta funcionado");
+// Routes
+app.get('/', (req, res) => {
+
+    let search = req.query.job;
+    let query = '%'+search+'%';
+
+    if(!search){
+        Job.findAll({order: [
+            ['createdAT', 'DESC']
+        ]})
+        .then(jobs => {
+            res.render("index", {
+                jobs
+            });
+        })
+        .catch(err => console.log(err));
+    } else {
+        Job.findAll({
+            where:{title:{[Op.like]:query}},
+            order: [
+            ['createdAT', 'DESC']
+        ]})
+        .then(jobs => {
+            res.render("index", {
+                jobs, search
+            });
+        })
+        .catch(err => console.log(err));
+    }
+    
 });
 
-// jobs routes
+// Jobs routes
 app.use('/jobs', require('./routes/jobs'));
