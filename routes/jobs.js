@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const Job = require('../models/Job'); // Adjusted path
+const Job = require('../models/Job');
 
 router.get('/test', (req, res) => {
-    res.send('deu certo'); // Corrected "req" to "res"
+    res.send('deu certo'); 
 });
 
-router.get("/view/:id", (req, res)=> Job.findOne({
+router.get("/view/:id", (req, res) => Job.findOne({
     where: {id:req.params.id}
     }).then(job => {
 
-    res.render('view', {
+        res.render('view', {
         job
-    });
+        });
 
     }).catch(err => console.log(err)));
 
